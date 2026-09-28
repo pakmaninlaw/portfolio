@@ -12,8 +12,8 @@ import time
 
 HOME = "/home/PakmanInLaw"
 
-# Сервер PythonAnywhere живёт по UTC — сроки задач и «сегодня» считаем по Москве
-os.environ["TZ"] = "Europe/Moscow"
+# Сервер PythonAnywhere живёт по UTC — сроки задач и «сегодня» считаем по Самаре (UTC+4)
+os.environ["TZ"] = "Europe/Samara"
 time.tzset()
 
 os.environ["CRM_DEMO"] = "1"            # CRM: демо-данные, лимиты, ежедневный сброс
