@@ -8,8 +8,13 @@ WSGI-файл для PythonAnywhere: один сайт — несколько п
 """
 import os
 import sys
+import time
 
 HOME = "/home/PakmanInLaw"
+
+# Сервер PythonAnywhere живёт по UTC — сроки задач и «сегодня» считаем по Москве
+os.environ["TZ"] = "Europe/Moscow"
+time.tzset()
 
 os.environ["CRM_DEMO"] = "1"            # CRM: демо-данные, лимиты, ежедневный сброс
 os.environ["WINCHESTER_PUBLIC"] = "1"   # магазин: закрыть журнал заявок и отладку

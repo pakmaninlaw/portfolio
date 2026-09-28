@@ -172,7 +172,7 @@ PAGE = """
   {% for p in projects %}
     {% if p.url %}<a class="card {{ p.key }}" href="{{ p.url }}">{% else %}<div class="card {{ p.key }}" tabindex="0">{% endif %}
       <div class="cover {{ p.key }}">
-        {% if p.image %}<img src="{{ p.image }}" alt="{{ p.title }}" loading="lazy">
+        {% if p.image %}<img src="{{ p.image }}" alt="{{ p.title }}" fetchpriority="high">
         {% elif p.key == 'crm' %}<div class="dash"><div></div><div></div><div></div><div></div><div class="bar"></div></div>
         {% else %}<div class="flower"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><b></b></div>{% endif %}
       </div>
