@@ -32,6 +32,7 @@ print("✔ витрина")
 
 shop = check("get", "/winchester/", 200).get_data(as_text=True)
 assert 'var ROOT = "/winchester"' in shop and 'src="/winchester/banner.jpg"' in shop
+assert 'class="back-home" href="/"' in shop, "нет кнопки «Все проекты» в магазине"
 check("get", "/winchester/banner.jpg", 200)
 check("get", "/winchester/api/slice.png?meat=beef&caliber=20&tech=cured&fat=20&spice=1.5", 200)
 check("get", "/winchester/api/quote?meat=beef", 200)
@@ -45,8 +46,8 @@ print("✔ старые ссылки переадресуются")
 
 crm = check("get", "/crm/", 200).get_data(as_text=True)
 assert 'const ROOT = "/crm"' in crm and "Демо-версия" in crm
-for page in ["/crm/interviews", "/crm/employees", "/crm/kpi"]:
-    check("get", page, 200)
+for page in ["/crm/interviews", "/crm/employees", "/crm/kpi", "/crm/log"]:
+    assert 'class="back-home" href="/"' in check("get", page, 200).get_data(as_text=True), page
 print("✔ CRM под /crm в демо-режиме")
 
 codes = [client.post("/winchester/api/order", json={"name": "Тест", "phone": "+7 900 000-00-00"},
