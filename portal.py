@@ -62,23 +62,59 @@ PAGE = """
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Сергей Пакман — проекты системного аналитика</title>
 <meta name="description" content="Учебные проекты системного аналитика: прототип магазина ВИНЧЕСТЕРЪ, CRM аналитика, ICQ-мессенджер.">
+<script>try { document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') || localStorage.getItem('sa-theme') || 'classic'; } catch (e) { document.documentElement.dataset.theme = 'classic'; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-  :root {
+  /* Темы оформления: classic (по умолчанию), graphite, bordeaux, violet */
+  :root, :root[data-theme="classic"] {
+    --bg: #0f1724; --panel: #162131; --panel-2: #1b293d; --text: #e8edf4; --muted: #9fb0c4;
+    --line: rgba(255,255,255,.08); --accent: #7d9cc4; --accent-2: #c9a86a;
+    --glow-1: #1d3557; --glow-2: #2b2a24; --crm-cover: linear-gradient(135deg, #1f3a5f, #36557f);
+    --win: #d8aa63; --crm: #7d9cc4; --icq: #7ed957; color-scheme: dark;
+  }
+  :root[data-theme="graphite"] {
+    --bg: #141518; --panel: #1b1d21; --panel-2: #222529; --text: #ececec; --muted: #a4a8ae;
+    --line: rgba(255,255,255,.08); --accent: #b4bcc8; --accent-2: #d9dde3;
+    --glow-1: #2a2d33; --glow-2: #1f2226; --crm-cover: linear-gradient(135deg, #3a3f47, #59616c);
+    --crm: #b4bcc8;
+  }
+  :root[data-theme="bordeaux"] {
+    --bg: #1a1214; --panel: #22181b; --panel-2: #2a1d21; --text: #f1e9ea; --muted: #bfa9ad;
+    --line: rgba(255,255,255,.08); --accent: #c7798a; --accent-2: #d8b98a;
+    --glow-1: #4a1a28; --glow-2: #2c2320; --crm-cover: linear-gradient(135deg, #5a1a2b, #83344a);
+    --crm: #c7798a;
+  }
+  :root[data-theme="violet"] {
     --bg: #0f1020; --panel: #171933; --panel-2: #1e2144; --text: #eceefe; --muted: #a3a8d6;
     --line: rgba(255,255,255,.08); --accent: #8b7cff; --accent-2: #4fd1c5;
-    --win: #d8aa63; --crm: #8b7cff; --icq: #7ed957;
+    --glow-1: #2b2366; --glow-2: #0f4c55; --crm-cover: linear-gradient(135deg, #667eea, #764ba2);
+    --crm: #8b7cff;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
-    background: radial-gradient(1200px 600px at 10% -10%, #2b2366 0%, transparent 60%),
-                radial-gradient(900px 500px at 110% 10%, #0f4c55 0%, transparent 55%), var(--bg);
+    background: radial-gradient(1200px 600px at 10% -10%, var(--glow-1) 0%, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, var(--glow-2) 0%, transparent 55%), var(--bg);
     color: var(--text); font-family: 'Manrope', 'Segoe UI', sans-serif; min-height: 100vh;
+    transition: background-color .4s, color .4s;
   }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 56px 16px 40px; }
-  header { margin-bottom: 40px; }
+  header { margin-bottom: 40px; position: relative; }
+
+  /* Переключатель темы */
+  .themes { position: absolute; top: -36px; right: 0; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .8rem; }
+  .themes button {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; padding: 0; cursor: pointer;
+    background: var(--sw); box-shadow: 0 0 0 1px var(--line); transition: transform .25s, border-color .25s;
+  }
+  .themes button:hover { transform: scale(1.18); }
+  .themes button[aria-pressed="true"] { border-color: var(--text); }
+  .themes .t-classic { --sw: linear-gradient(135deg, #1f3a5f 50%, #c9a86a 50%); }
+  .themes .t-graphite { --sw: linear-gradient(135deg, #3a3f47 50%, #d9dde3 50%); }
+  .themes .t-bordeaux { --sw: linear-gradient(135deg, #5a1a2b 50%, #d8b98a 50%); }
+  .themes .t-violet { --sw: linear-gradient(135deg, #764ba2 50%, #4fd1c5 50%); }
+  @media (max-width: 600px) { .themes { position: static; margin-bottom: 18px; } }
   .eyebrow { color: var(--accent-2); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; font-size: .8rem; }
   h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.1; margin: 10px 0 12px; font-weight: 800; }
   h1 span { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -110,7 +146,7 @@ PAGE = """
   .cover { height: 180px; position: relative; overflow: hidden; display: grid; place-items: center; }
   .cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
   .card:hover .cover img { transform: scale(1.06); }
-  .cover.crm { background: linear-gradient(135deg, #667eea, #764ba2); }
+  .cover.crm { background: var(--crm-cover); }
   .cover.icq { background: radial-gradient(circle at 50% 60%, #1f3a1a, #0f1a0d); }
 
   /* Мини-дашборд CRM на обложке */
@@ -118,7 +154,7 @@ PAGE = """
   .dash div { background: rgba(255,255,255,.18); border-radius: 8px; height: 44px; transition: transform .4s; }
   .dash div:nth-child(1) { height: 60px; } .dash div:nth-child(3) { height: 36px; }
   .dash .bar { grid-column: span 4; height: 10px; background: rgba(255,255,255,.14); position: relative; overflow: hidden; }
-  .dash .bar::before { content: ""; position: absolute; inset: 0; width: 72%; background: #4fd1c5; border-radius: 8px; transition: width .6s; }
+  .dash .bar::before { content: ""; position: absolute; inset: 0; width: 72%; background: var(--accent-2); border-radius: 8px; transition: width .6s; }
   .card:hover .dash div:nth-child(odd) { transform: translateY(-4px); }
   .card:hover .dash .bar::before { width: 88%; }
 
@@ -137,7 +173,7 @@ PAGE = """
   h2 { margin: 0; font-size: 1.35rem; font-weight: 800; }
   .sub { color: var(--c); font-weight: 600; font-size: .92rem; margin: 2px 0 0; }
   .badge { font-size: .72rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
-  .badge.live { background: rgba(79,209,197,.14); color: var(--accent-2); }
+  .badge.live { background: color-mix(in srgb, var(--accent-2) 16%, transparent); color: var(--accent-2); }
   .badge.live::before { content: "● "; animation: pulse 2s infinite; }
   .badge.dev { background: rgba(126,217,87,.12); color: var(--icq); }
   @keyframes pulse { 50% { opacity: .35; } }
@@ -162,6 +198,13 @@ PAGE = """
 <body>
 <div class="wrap">
   <header>
+    <div class="themes" role="group" aria-label="Оформление">
+      <span>Оформление</span>
+      <button class="t-classic" data-theme="classic" title="Классика"></button>
+      <button class="t-graphite" data-theme="graphite" title="Графит"></button>
+      <button class="t-bordeaux" data-theme="bordeaux" title="Бордо"></button>
+      <button class="t-violet" data-theme="violet" title="Фиолетовая"></button>
+    </div>
     <div class="eyebrow">Портфолио · курс «Системный аналитик»</div>
     <h1>Сергей Пакман — <span>проекты аналитика</span></h1>
     <p class="lead">Прототипы, которые я проектирую и собираю в процессе обучения: от интервью со стейкхолдером
@@ -198,6 +241,17 @@ PAGE = """
     <a href="https://github.com/pakmaninlaw" target="_blank" rel="noopener">github.com/pakmaninlaw</a>
   </footer>
 </div>
+<script>
+  // Тема сохраняется в браузере и общая для витрины и CRM
+  const buttons = document.querySelectorAll('.themes button');
+  function applyTheme(name) {
+    document.documentElement.dataset.theme = name;
+    buttons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === name)));
+    try { localStorage.setItem('sa-theme', name); } catch (e) {}
+  }
+  buttons.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.theme)));
+  applyTheme(document.documentElement.dataset.theme || 'classic');
+</script>
 </body>
 </html>
 """
