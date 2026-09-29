@@ -4,18 +4,57 @@
   /             — витрина проектов
   /winchester/  — ВИНЧЕСТЕРЪ, конструктор колбасы (ДЗ «Мир колбасы Люкс»)
   /crm/         — CRM системного аналитика (итоговая работа)
+  /notes        — конспект лекций (по паролю; файл и хеш пароля лежат только на сервере, не в GitHub)
+  /docs/<проект> — разбор кода на русском (Markdown из репозиториев проектов)
 
 Плюс защита от ботов: ограничение частоты POST-запросов с одного IP.
 """
 import json
+import os
+import secrets
 import threading
 import time
 from collections import deque
+from datetime import timedelta
 
-from flask import Flask, redirect, render_template_string, request
+from flask import Flask, abort, redirect, render_template_string, request, session
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
+
+# Закрытые материалы: папка вне репозитория (на сервере ~/notes): lectures.html и password.hash
+NOTES_DIR = os.environ.get("NOTES_DIR") or os.path.expanduser("~/notes")
+DOCS = {
+    "crm": ("Разбор кода: CRM аналитика", os.environ.get("CRM_DOCS") or os.path.expanduser("~/crm/docs/РАЗБОР_КОДА.md"),
+            "https://github.com/pakmaninlaw/crm-system-analyst"),
+    "icq": ("Разбор кода: ICQ-мессенджер", os.environ.get("ICQ_DOCS") or os.path.expanduser("~/icq/docs/РАЗБОР_КОДА.md"),
+            "https://github.com/pakmaninlaw/icq-messenger"),
+}
+
+
+def _secret_key():
+    """Ключ подписи сессий: из переменной окружения или из файла рядом с материалами (создаётся один раз)."""
+    if os.environ.get("PORTAL_SECRET"):
+        return os.environ["PORTAL_SECRET"]
+    path = os.path.join(NOTES_DIR, ".portal_secret")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        key = secrets.token_hex(32)
+        try:
+            os.makedirs(NOTES_DIR, exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(key)
+        except OSError:
+            pass
+        return key
+
+
+app.secret_key = _secret_key()
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
+                  PERMANENT_SESSION_LIFETIME=timedelta(days=30))
 
 PROJECTS = [
     {
@@ -190,6 +229,15 @@ PAGE = """
   .progress::before { content: ""; display: block; height: 100%; width: 25%; background: var(--icq); border-radius: 99px; transition: width 1.2s; }
   .card.icq:hover .progress::before { width: 35%; }
 
+  .mat-title { font-size: 1.25rem; margin: 44px 0 14px; font-weight: 800; }
+  .mats { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .mat { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 16px; border: 1px solid var(--line);
+         background: linear-gradient(180deg, var(--panel-2), var(--panel)); color: inherit; text-decoration: none;
+         transition: transform .3s, border-color .3s; }
+  .mat:hover, .mat:focus-visible { transform: translateY(-3px); border-color: var(--accent); }
+  .mat-ic { font-size: 1.6rem; line-height: 1; }
+  .mat b { display: block; margin-bottom: 4px; }
+  .mat small { color: var(--muted); line-height: 1.45; display: block; }
   footer { margin-top: 48px; color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
   footer a { color: var(--muted); }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
@@ -236,6 +284,13 @@ PAGE = """
   {% endfor %}
   </main>
 
+  <h2 class="mat-title">Материалы</h2>
+  <div class="mats">
+    <a class="mat" href="/notes"><span class="mat-ic">🔒</span><span><b>Конспект лекций</b><small>14–25 сентября: BPMN, алгоритмизация, Wi-Fi и TCP/IP. Доступ по паролю — из уважения к преподавателю.</small></span></a>
+    <a class="mat" href="/docs/crm"><span class="mat-ic">📘</span><span><b>Разбор кода CRM</b><small>Как устроена CRM: SQL, шаблоны, разбор интервью, KPI, генератор BPMN — простыми словами.</small></span></a>
+    <a class="mat" href="/docs/icq"><span class="mat-ic">📗</span><span><b>Разбор кода ICQ</b><small>WebSocket и Socket.IO, потоки, хеши паролей, синтез звука «о-оу».</small></span></a>
+  </div>
+
   <footer>
     <span>© 2026 Сергей Пакман · учебные проекты</span>
     <a href="https://github.com/pakmaninlaw" target="_blank" rel="noopener">github.com/pakmaninlaw</a>
@@ -275,6 +330,156 @@ def legacy_winchester(rest=None):
     if request.query_string:
         target += "?" + request.query_string.decode()
     return redirect(target, code=308)
+
+
+# ==================== КОНСПЕКТ ПО ПАРОЛЮ ====================
+NOTES_LOGIN = """
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект лекций — вход</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0f1724; color: #e8edf4;
+         font-family: 'Segoe UI', Roboto, Arial, sans-serif; padding: 16px; box-sizing: border-box; }
+  form { background: #172233; border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 28px; width: min(380px, 100%); box-sizing: border-box; }
+  h1 { font-size: 1.3rem; margin: 0 0 6px; } p { color: #9fb0c4; margin: 0 0 18px; font-size: .92rem; line-height: 1.5; }
+  input { width: 100%; box-sizing: border-box; padding: 11px 13px; border-radius: 10px; border: 1px solid #2c3b52; background: #0f1724; color: #e8edf4; font-size: 1rem; }
+  button { width: 100%; margin-top: 14px; padding: 11px; border: 0; border-radius: 10px; background: #c9a86a; color: #1b1406; font-weight: 700; font-size: 1rem; cursor: pointer; }
+  .err { color: #f08a9c; margin-top: 12px; min-height: 1.2em; font-size: .9rem; }
+  a { color: #9fb0c4; font-size: .85rem; display: inline-block; margin-top: 16px; }
+</style></head>
+<body>
+<form method="post" action="/notes/login">
+  <h1>🔒 Конспект лекций</h1>
+  <p>Материалы курса «Системный аналитик» открыты для группы. Введите пароль.</p>
+  <input type="password" name="password" autofocus autocomplete="current-password" aria-label="Пароль">
+  <button>Открыть</button>
+  <div class="err">{{ error }}</div>
+  <a href="/">← Все проекты</a>
+</form>
+</body></html>
+"""
+
+NOTES_WRAP_HEAD = """<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<style>
+  .back-bar { position: sticky; top: 0; z-index: 20; display: flex; justify-content: space-between; gap: 10px; padding: 8px 16px;
+              background: #0f1724; font: 14px 'Segoe UI', Roboto, Arial, sans-serif; }
+  .back-bar a { color: #c9d6e8; text-decoration: none; }
+  .back-bar a:hover { color: #fff; }
+</style></head><body>
+<div class="back-bar"><a href="/">← Все проекты</a><a href="/notes/logout">Выйти</a></div>
+"""
+
+NOTES_WRAP_TAIL = """
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({startOnLoad: true, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict'});
+</script>
+</body></html>
+"""
+
+
+def notes_hash():
+    try:
+        with open(os.path.join(NOTES_DIR, "password.hash"), encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return None
+
+
+@app.route("/notes")
+def notes():
+    if not session.get("notes_ok"):
+        return render_template_string(NOTES_LOGIN, error="")
+    try:
+        with open(os.path.join(NOTES_DIR, "lectures.html"), encoding="utf-8") as f:
+            body = f.read()
+    except OSError:
+        abort(404)
+    resp = app.response_class(NOTES_WRAP_HEAD + body + NOTES_WRAP_TAIL, mimetype="text/html")
+    resp.headers["Cache-Control"] = "private, no-store"
+    resp.headers["X-Robots-Tag"] = "noindex"
+    return resp
+
+
+@app.route("/notes/login", methods=["POST"])
+def notes_login():
+    stored = notes_hash()
+    password = request.form.get("password", "")
+    if stored and password and check_password_hash(stored, password):
+        session.permanent = True
+        session["notes_ok"] = True
+        return redirect("/notes")
+    time.sleep(0.5)   # замедляем подбор (плюс общий лимит POST-запросов с одного IP)
+    return render_template_string(NOTES_LOGIN, error="Неверный пароль" if stored else "Материалы ещё не загружены"), 401
+
+
+@app.route("/notes/logout")
+def notes_logout():
+    session.pop("notes_ok", None)
+    return redirect("/")
+
+
+# ==================== РАЗБОР КОДА (Markdown) ====================
+DOC_PAGE = """
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }}</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f5f6f8; --paper: #fff; --ink: #16213a; --muted: #5d6781; --line: #dfe3ea; --accent: #1f4e79; --code: #eef2f7; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f1522; --paper: #161e2e; --ink: #e6ebf3; --muted: #9aa6bd; --line: #28334a; --accent: #8fb0dc; --code: #1c2940; color-scheme: dark; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 'IBM Plex Sans', 'Segoe UI', Roboto, Arial, sans-serif; }
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--paper); border-bottom: 1px solid var(--line); padding: 10px 16px;
+         display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: .9rem; }
+  .bar a { color: var(--accent); text-decoration: none; } .bar .sp { margin-left: auto; }
+  main { max-width: 880px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1, h2, h3 { line-height: 1.25; } h1 { font-size: 2rem; } h2 { margin-top: 2.2em; padding-top: .6em; border-top: 1px solid var(--line); }
+  a { color: var(--accent); }
+  code { font-family: 'IBM Plex Mono', Consolas, monospace; font-size: .88em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code); border-radius: 10px; padding: 12px 14px; overflow-x: auto; } pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; display: block; overflow-x: auto; margin: 12px 0; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  blockquote { margin: 12px 0; padding: 8px 14px; border-left: 3px solid var(--accent); background: var(--paper); border-radius: 0 8px 8px 0; }
+  details { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin: 8px 0; }
+  img { max-width: 100%; }
+</style></head>
+<body>
+<div class="bar"><a href="/">← Все проекты</a><b>{{ title }}</b><a class="sp" href="{{ repo }}" target="_blank" rel="noopener">Код на GitHub ↗</a></div>
+<main id="doc">Загрузка…</main>
+<script id="md" type="application/json">{{ markdown|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script type="module">
+  const md = JSON.parse(document.getElementById('md').textContent);
+  const doc = document.getElementById('doc');
+  doc.innerHTML = DOMPurify.sanitize(marked.parse(md), {ADD_TAGS: ['details', 'summary']});
+  // Диаграммы mermaid из блоков ```mermaid
+  const blocks = doc.querySelectorAll('pre code.language-mermaid');
+  if (blocks.length) {
+    const {default: mermaid} = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs');
+    blocks.forEach(b => { const pre = document.createElement('pre'); pre.className = 'mermaid'; pre.textContent = b.textContent; b.parentElement.replaceWith(pre); });
+    mermaid.initialize({startOnLoad: false, theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'neutral'});
+    await mermaid.run();
+  }
+</script>
+</body></html>
+"""
+
+
+@app.route("/docs/<name>")
+def docs(name):
+    if name not in DOCS:
+        abort(404)
+    title, path, repo = DOCS[name]
+    try:
+        with open(path, encoding="utf-8") as f:
+            markdown = f.read()
+    except OSError:
+        abort(404)
+    return render_template_string(DOC_PAGE, title=title, markdown=markdown, repo=repo)
 
 
 @app.route("/favicon.ico")

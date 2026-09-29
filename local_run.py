@@ -12,6 +12,9 @@ CRM_DIR = os.environ.get("CRM_DIR", os.path.join(HERE, "..", "CRM"))
 os.environ.setdefault("CRM_DEMO", "1")
 os.environ.setdefault("WINCHESTER_PUBLIC", "1")
 os.environ.setdefault("CRM_DB", os.path.join(HERE, "demo_crm.db"))  # демо-база отдельно от рабочей
+os.environ.setdefault("NOTES_DIR", os.path.join(HERE, "..", "notes"))       # конспект по паролю (вне репозитория)
+os.environ.setdefault("CRM_DOCS", os.path.join(CRM_DIR, "docs", "РАЗБОР_КОДА.md"))
+os.environ.setdefault("ICQ_DOCS", os.path.join(HERE, "..", "ICQ", "docs", "РАЗБОР_КОДА.md"))
 sys.path.insert(0, HERE)
 
 import portal  # noqa: E402
