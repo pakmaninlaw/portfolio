@@ -27,7 +27,7 @@ def check(method, url, status, **kw):
 
 
 html = check("get", "/", 200).get_data(as_text=True)
-assert "ВИНЧЕСТЕРЪ" in html and "CRM аналитика" in html and "в разработке" in html
+assert "ВИНЧЕСТЕРЪ" in html and "CRM аналитика" in html and "icq-messenger" in html
 print("✔ витрина")
 
 shop = check("get", "/winchester/", 200).get_data(as_text=True)
@@ -46,8 +46,8 @@ print("✔ старые ссылки переадресуются")
 
 crm = check("get", "/crm/", 200).get_data(as_text=True)
 assert 'const ROOT = "/crm"' in crm and "Демо-версия" in crm
-for page in ["/crm/interviews", "/crm/employees", "/crm/kpi", "/crm/log"]:
-    assert 'class="back-home" href="/"' in check("get", page, 200).get_data(as_text=True), page
+for page in ["/crm/", "/crm/tasks", "/crm/kanban", "/crm/bpmn", "/crm/interviews", "/crm/employees", "/crm/kpi", "/crm/log"]:
+    assert 'class="back" href="/"' in check("get", page, 200).get_data(as_text=True), page
 print("✔ CRM под /crm в демо-режиме")
 
 codes = [client.post("/winchester/api/order", json={"name": "Тест", "phone": "+7 900 000-00-00"},

@@ -34,9 +34,9 @@ PROJECTS = [
         "key": "crm",
         "title": "CRM аналитика",
         "subtitle": "Интервью → задачи → исполнители → KPI",
-        "text": "Протокол встречи со стейкхолдером (текстом или голосом) превращается в задачи для Frontend, Backend, "
-                "Architecture и Security, назначается на свободных сотрудников, считается время, качество и KPI.",
-        "tags": ["Flask", "SQLite", "Web Speech API", "KPI"],
+        "text": "Интервью со стейкхолдером (текстом или голосом) превращается в задачи по отделам и BPMN-схему процесса. "
+                "Дашборд с графиками, канбан-доска, KPI и контроль качества, журнал событий.",
+        "tags": ["Flask", "SQLite", "BPMN", "Канбан", "Chart.js"],
         "url": "/crm/",
         "repo": "https://github.com/pakmaninlaw/crm-system-analyst",
         "status": "live",
@@ -45,12 +45,12 @@ PROJECTS = [
         "key": "icq",
         "title": "ICQ-мессенджер",
         "subtitle": "Клиент-серверный чат в духе «Аськи»",
-        "text": "Обмен сообщениями в реальном времени через WebSocket, статусы «в сети», история переписки "
-                "и легендарное «о-оу». Проект в разработке.",
-        "tags": ["Flask-SocketIO", "WebSocket", "TCP/IP"],
+        "text": "Сервер на Flask-SocketIO, веб-клиент и настольный клиент на python-socketio: вход с хешем пароля, "
+                "история, «в сети», «печатает…», защита от спама и легендарное «о-оу». Запускается на своём компьютере.",
+        "tags": ["Flask-SocketIO", "WebSocket", "Tkinter", "TCP/IP"],
         "url": None,
-        "repo": None,
-        "status": "dev",
+        "repo": "https://github.com/pakmaninlaw/icq-messenger",
+        "status": "local",
     },
 ]
 
@@ -222,13 +222,13 @@ PAGE = """
       <div class="body">
         <div class="top">
           <div><h2>{{ p.title }}</h2><p class="sub">{{ p.subtitle }}</p></div>
-          {% if p.status == 'live' %}<span class="badge live">работает</span>{% else %}<span class="badge dev">в разработке</span>{% endif %}
+          {% if p.status == 'live' %}<span class="badge live">работает</span>{% elif p.status == 'local' %}<span class="badge dev">готов · на GitHub</span>{% else %}<span class="badge dev">в разработке</span>{% endif %}
         </div>
         <p class="text">{{ p.text }}</p>
-        {% if p.status == 'dev' %}<div class="progress" title="Готовность"></div>{% endif %}
+
         <div class="tags">{% for t in p.tags %}<span>{{ t }}</span>{% endfor %}</div>
         <div class="actions">
-          {% if p.url %}<span class="go">Открыть</span>{% else %}<span class="go" style="opacity:.6">Скоро</span>{% endif %}
+          {% if p.url %}<span class="go">Открыть</span>{% elif p.repo %}<span class="go" style="opacity:.75">Запуск на ПК</span>{% else %}<span class="go" style="opacity:.6">Скоро</span>{% endif %}
           {% if p.repo %}<object><a class="repo" href="{{ p.repo }}" target="_blank" rel="noopener">GitHub ↗</a></object>{% endif %}
         </div>
       </div>
