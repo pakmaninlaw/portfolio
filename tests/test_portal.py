@@ -8,6 +8,10 @@ import tempfile
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.environ["CRM_DB"] = os.path.join(tempfile.mkdtemp(), "crm.db")
+LEGAL_TMP = tempfile.mkdtemp()   # базы юридической CRM — во временной папке
+os.environ["LEGAL_DB"] = os.path.join(LEGAL_TMP, "legal.db")
+os.environ["LEGAL_DEMO_DB"] = os.path.join(LEGAL_TMP, "demo.db")
+os.environ["LEGAL_UPLOADS"] = os.path.join(LEGAL_TMP, "uploads")
 # Временная папка конспекта со своим тестовым паролем (настоящий пароль в репозиторий не попадает)
 NOTES = tempfile.mkdtemp()
 os.environ["NOTES_DIR"] = NOTES
@@ -55,6 +59,15 @@ assert 'const ROOT = "/crm"' in crm and "Демо-версия" in crm
 for page in ["/crm/", "/crm/tasks", "/crm/kanban", "/crm/bpmn", "/crm/interviews", "/crm/employees", "/crm/kpi", "/crm/log"]:
     assert 'class="back" href="/"' in check("get", page, 200).get_data(as_text=True), page
 print("✔ CRM под /crm в демо-режиме")
+
+if os.path.isdir(os.path.join(local_run.LEGAL_DIR, "legalcrm")):
+    assert 'href="/legal-demo/"' in html and "legal-crm" in html
+    r = client.get("/legal/")
+    assert r.status_code == 302 and "/legal/login" in r.headers["Location"], (r.status_code, r.headers.get("Location"))
+    check("get", "/legal/login", 200)
+    r = client.get("/legal-demo/login")
+    assert r.status_code == 200, r.status_code
+    print("✔ юридическая CRM под /legal и /legal-demo")
 
 assert "Введите пароль" in check("get", "/notes", 200).get_data(as_text=True)
 assert "Неверный пароль" in check("post", "/notes/login", 401, data={"password": "wrong"}, headers={"X-Real-IP": "10.0.0.9"}).get_data(as_text=True)

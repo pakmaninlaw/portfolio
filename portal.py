@@ -81,6 +81,17 @@ PROJECTS = [
         "status": "live",
     },
     {
+        "key": "legal",
+        "title": "Юридическая CRM",
+        "subtitle": "Задачи, дела и сроки юридической команды",
+        "text": "Юридическая CRM: канбан, суды и сроки, договоры, доверенности, клиентский кабинет, Telegram-бот. "
+                "Роли администратора, исполнителя и клиента; в демо-версии вход одной кнопкой.",
+        "tags": ["Flask", "SQLite", "RBAC", "Канбан", "Telegram Bot API"],
+        "url": "/legal-demo/",
+        "repo": "https://github.com/pakmaninlaw/legal-crm",
+        "status": "live",
+    },
+    {
         "key": "icq",
         "title": "ICQ-мессенджер",
         "subtitle": "Клиент-серверный чат в духе «Аськи»",
@@ -100,7 +111,7 @@ PAGE = """
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Сергей Пакман — проекты системного аналитика</title>
-<meta name="description" content="Учебные проекты системного аналитика: прототип магазина ВИНЧЕСТЕРЪ, CRM аналитика, ICQ-мессенджер.">
+<meta name="description" content="Учебные проекты системного аналитика: прототип магазина ВИНЧЕСТЕРЪ, CRM аналитика, юридическая CRM, ICQ-мессенджер.">
 <script>try { document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') || localStorage.getItem('sa-theme') || 'classic'; } catch (e) { document.documentElement.dataset.theme = 'classic'; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
@@ -110,7 +121,7 @@ PAGE = """
     --bg: #0f1724; --panel: #162131; --panel-2: #1b293d; --text: #e8edf4; --muted: #9fb0c4;
     --line: rgba(255,255,255,.08); --accent: #7d9cc4; --accent-2: #c9a86a;
     --glow-1: #1d3557; --glow-2: #2b2a24; --crm-cover: linear-gradient(135deg, #1f3a5f, #36557f);
-    --win: #d8aa63; --crm: #7d9cc4; --icq: #7ed957; color-scheme: dark;
+    --win: #d8aa63; --crm: #7d9cc4; --icq: #7ed957; --legal: #8fb3a9; color-scheme: dark;
   }
   :root[data-theme="graphite"] {
     --bg: #141518; --panel: #1b1d21; --panel-2: #222529; --text: #ececec; --muted: #a4a8ae;
@@ -181,12 +192,24 @@ PAGE = """
   .card.winchester { --c: var(--win); }
   .card.crm { --c: var(--crm); }
   .card.icq { --c: var(--icq); cursor: default; }
+  .card.legal { --c: var(--legal); }
 
   .cover { height: 180px; position: relative; overflow: hidden; display: grid; place-items: center; }
   .cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
   .card:hover .cover img { transform: scale(1.06); }
   .cover.crm { background: var(--crm-cover); }
   .cover.icq { background: radial-gradient(circle at 50% 60%, #1f3a1a, #0f1a0d); }
+  .cover.legal { background: linear-gradient(135deg, #1d2f2b, #2f4a44); }
+
+  /* Мини-канбан юридической CRM: при наведении карточка переезжает в «В работе» */
+  .kan { width: 80%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; position: relative; }
+  .kan > div { background: rgba(255,255,255,.08); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 6px; min-height: 104px; }
+  .kan > div::before { content: ""; height: 4px; width: 60%; border-radius: 4px; background: rgba(255,255,255,.3); }
+  .kan i { display: block; height: 20px; border-radius: 5px; background: rgba(255,255,255,.2); }
+  .kan i.hot { background: var(--accent-2); }
+  .kan .move { position: absolute; left: 6px; top: 68px; width: calc((100% - 20px) / 3 - 12px); background: var(--legal);
+               transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+  .card.legal:hover .kan .move { transform: translateX(calc(100% + 22px)) translateY(-26px); }
 
   /* Мини-дашборд CRM на обложке */
   .dash { width: 78%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -265,6 +288,7 @@ PAGE = """
       <div class="cover {{ p.key }}">
         {% if p.image %}<img src="{{ p.image }}" alt="{{ p.title }}" fetchpriority="high">
         {% elif p.key == 'crm' %}<div class="dash"><div></div><div></div><div></div><div></div><div class="bar"></div></div>
+        {% elif p.key == 'legal' %}<div class="kan"><div><i></i><i></i></div><div><i class="hot"></i></div><div><i></i><i></i><i></i></div><i class="move"></i></div>
         {% else %}<div class="flower"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><b></b></div>{% endif %}
       </div>
       <div class="body">
